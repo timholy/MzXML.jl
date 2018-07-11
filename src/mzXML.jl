@@ -2,7 +2,7 @@ module mzXML
 
 using LightXML, Unitful, Codecs
 
-immutable MSscan{T<:AbstractFloat,TI<:Real}
+struct MSscan{T<:AbstractFloat,TI<:Real}
     polarity::Char
     msLevel::Int
     retentionTime::typeof(1.0u"s")
@@ -34,17 +34,17 @@ function index(filename)
             error("Cannot find indexOffset element")
         end
         length(m.captures) == 1 || error("indexOffset should contain a single number")
-        indexpos = int(m.captures[1])
+        indexpos = parse(Int, m.captures[1])
         length_tail = l - m.offset
         # Read the index
         seek(file, indexpos)
         str = loadrest(file)
         xindex = parse_string(str[1:end-length_tail-1])
         xroot = root(xindex)
-        scanpositions = Array(Int, 0)
+        scanpositions = Array{Int}(0)
         for c in child_elements(xroot)
             name(c) == "offset" || error("index could not be parsed")
-            push!(scanpositions, int(content(c)))
+            push!(scanpositions, parse(Int, content(c)))
         end
         scanpositions
     end
@@ -135,13 +135,13 @@ function load_scan(elm, ndeeper)
     I = A[2:2:end]
     mz = reinterpret(T, A[1:2:end])
     children = ndeeper > 0 ? load_scans!(Array{MSscan{T,TI}}(0), elm, ndeeper-1) : nochildren
-    MSscan(polarity, msLevel, retentionTime, lowMz, highMz, basePeakMz, totIonCurrent, mz, I, children)
+    MSscan{T,TI}(polarity, msLevel, retentionTime, lowMz, highMz, basePeakMz, totIonCurrent, mz, I, children)
 end
 
 function loadrest(file::IOStream)
     nb = filesize(file) - position(file)
-    b = readbytes(file, nb)
-    return is_valid_ascii(b) ? ASCIIString(b) : UTF8String(b)
+    b = read(file, nb)
+    return String(b)
 end
 
 function parse_time(tstr)
