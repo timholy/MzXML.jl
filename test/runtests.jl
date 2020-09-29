@@ -14,6 +14,10 @@ using Test
     @test scan.retentionTime == 0.004*u"s"
     @test scans[2].retentionTime == 0.809*u"s"
 
+    io = IOBuffer()
+    show(io, scan)
+    @test occursin("└─basePeak 321.4", String(take!(io)))
+
     idx = mzXML.index("test32.mzXML")
     @test idx == [1231, 4242]
 
