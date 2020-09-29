@@ -15,8 +15,17 @@ struct MSscan{T<:AbstractFloat,TI<:Real}
     children::Vector{MSscan{T,TI}}
 end
 
-const empty32 = Array{MSscan{Float32,Float32}}(0)
-const empty64 = Array{MSscan{Float64,Float64}}(0)
+const empty32 = MSscan{Float32,Float32}[]
+const empty64 = MSscan{Float64,Float64}[]
+
+function Base.show(io::IO, scan::MSscan)
+    if scan.msLevel > 1
+        print(io, "  "^(scan.msLevel-2), "└─basePeak ", scan.basePeakMz, ": ")
+    end
+    print(io, scan.retentionTime, ": ")
+    mzI = [mz=>I for (mz, I) in zip(scan.mz, scan.I)]
+    println(io, mzI)
+end
 
 function index(filename)
     scanpositions = open(filename) do file
@@ -41,7 +50,7 @@ function index(filename)
         str = loadrest(file)
         xindex = parse_string(str[1:end-length_tail-1])
         xroot = root(xindex)
-        scanpositions = Array{Int}(0)
+        scanpositions = Int[]
         for c in child_elements(xroot)
             name(c) == "offset" || error("index could not be parsed")
             push!(scanpositions, parse(Int, content(c)))
@@ -85,7 +94,7 @@ function load_scans(elm, ndeeper=0)
         break
     end
     # Now load the data
-    scans = Array{MSscan{T,TI}}(0)
+    scans = MSscan{T,TI}[]
     load_scans!(scans, elm, ndeeper)
 end
 
@@ -134,7 +143,7 @@ function load_scan(elm, ndeeper)
     po == "m/z-int" || error("Don't know what to do with pairOrder/contentType $po")
     I = A[2:2:end]
     mz = reinterpret(T, A[1:2:end])
-    children = ndeeper > 0 ? load_scans!(Array{MSscan{T,TI}}(0), elm, ndeeper-1) : nochildren
+    children = ndeeper > 0 ? load_scans!(MSscan{T,TI}[], elm, ndeeper-1) : nochildren
     MSscan{T,TI}(polarity, msLevel, retentionTime, lowMz, highMz, basePeakMz, totIonCurrent, mz, I, children)
 end
 

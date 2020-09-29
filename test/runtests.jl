@@ -1,5 +1,5 @@
 using mzXML, Unitful
-using Base.Test
+using Test
 
 @testset "mzXML" begin
     scans, info = mzXML.load("test32.mzXML")
@@ -13,6 +13,10 @@ using Base.Test
     @test scan.totIonCurrent == 1.637827475594e06
     @test scan.retentionTime == 0.004*u"s"
     @test scans[2].retentionTime == 0.809*u"s"
+
+    io = IOBuffer()
+    show(io, scan)
+    @test occursin("└─basePeak 321.4", String(take!(io)))
 
     idx = mzXML.index("test32.mzXML")
     @test idx == [1231, 4242]

@@ -1,0 +1,20 @@
+name = "mzXML"
+uuid = "cb69de98-8f9f-5947-b504-cdcc19a34020"
+version = "0.1.0"
+
+[deps]
+Codecs = "19ecbf4d-ef7c-5e4b-b54a-0a0ff23c5aed"
+LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[compat]
+Codecs = "0.5"
+LightXML = "0.8, 0.9"
+Unitful = "1"
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
