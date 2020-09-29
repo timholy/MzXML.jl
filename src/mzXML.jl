@@ -15,8 +15,8 @@ struct MSscan{T<:AbstractFloat,TI<:Real}
     children::Vector{MSscan{T,TI}}
 end
 
-const empty32 = Array{MSscan{Float32,Float32}}(0)
-const empty64 = Array{MSscan{Float64,Float64}}(0)
+const empty32 = MSscan{Float32,Float32}[]
+const empty64 = MSscan{Float64,Float64}[]
 
 function index(filename)
     scanpositions = open(filename) do file
@@ -41,7 +41,7 @@ function index(filename)
         str = loadrest(file)
         xindex = parse_string(str[1:end-length_tail-1])
         xroot = root(xindex)
-        scanpositions = Array{Int}(0)
+        scanpositions = Int[]
         for c in child_elements(xroot)
             name(c) == "offset" || error("index could not be parsed")
             push!(scanpositions, parse(Int, content(c)))
@@ -85,7 +85,7 @@ function load_scans(elm, ndeeper=0)
         break
     end
     # Now load the data
-    scans = Array{MSscan{T,TI}}(0)
+    scans = MSscan{T,TI}[]
     load_scans!(scans, elm, ndeeper)
 end
 

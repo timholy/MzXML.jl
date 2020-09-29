@@ -1,5 +1,5 @@
 using mzXML, Unitful
-using Base.Test
+using Test
 
 @testset "mzXML" begin
     scans, info = mzXML.load("test32.mzXML")
