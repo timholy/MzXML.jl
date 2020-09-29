@@ -18,6 +18,15 @@ end
 const empty32 = MSscan{Float32,Float32}[]
 const empty64 = MSscan{Float64,Float64}[]
 
+function Base.show(io::IO, scan::MSscan)
+    if scan.msLevel > 1
+        print(io, "  "^(scan.msLevel-2), "└─basePeak ", scan.basePeakMz, ": ")
+    end
+    print(io, scan.retentionTime, ": ")
+    mzI = [mz=>I for (mz, I) in zip(scan.mz, scan.I)]
+    println(io, mzI)
+end
+
 function index(filename)
     scanpositions = open(filename) do file
         # Find the indexOffset element
@@ -134,7 +143,7 @@ function load_scan(elm, ndeeper)
     po == "m/z-int" || error("Don't know what to do with pairOrder/contentType $po")
     I = A[2:2:end]
     mz = reinterpret(T, A[1:2:end])
-    children = ndeeper > 0 ? load_scans!(Array{MSscan{T,TI}}(0), elm, ndeeper-1) : nochildren
+    children = ndeeper > 0 ? load_scans!(MSscan{T,TI}[], elm, ndeeper-1) : nochildren
     MSscan{T,TI}(polarity, msLevel, retentionTime, lowMz, highMz, basePeakMz, totIonCurrent, mz, I, children)
 end
 
