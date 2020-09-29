@@ -9,7 +9,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 Codecs = "0.5"
-LightXML = "0.9"
+LightXML = "0.8, 0.9"
 Unitful = "1"
 julia = "1"
 
