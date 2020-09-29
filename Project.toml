@@ -1,6 +1,6 @@
 name = "mzXML"
 uuid = "cb69de98-8f9f-5947-b504-cdcc19a34020"
-version = "0.1"
+version = "0.1.0"
 
 [deps]
 Codecs = "19ecbf4d-ef7c-5e4b-b54a-0a0ff23c5aed"
