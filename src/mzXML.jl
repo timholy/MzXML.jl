@@ -1,7 +1,7 @@
 module mzXML
 
 using Base64
-using LightXML, Unitful
+using LightXML, Unitful, ProgressMeter
 import AxisArrays
 
 """
@@ -123,14 +123,17 @@ function load_scans(elm, ndeeper=0)
     load_scans!(scans, elm, ndeeper)
 end
 
-function load_scans!(scans, elm, ndeeper)
+@noinline function load_scans!(scans, elm, ndeeper)
+    prog = ProgressUnknown("Number of scans read:")
     for c in child_elements(elm)
         n = name(c)
         if n != "scan"
             continue
         end
         push!(scans, load_scan(c, ndeeper)::eltype(scans))
+        next!(prog)
     end
+    finish!(prog)
     scans
 end
 
