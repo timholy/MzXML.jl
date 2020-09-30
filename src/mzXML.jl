@@ -1,6 +1,7 @@
 module mzXML
 
-using LightXML, Unitful, Codecs
+using Base64
+using LightXML, Unitful
 import AxisArrays
 
 """
@@ -151,7 +152,7 @@ function load_scan(elm, ndeeper)
     totIonCurrent = parse(Float64, attribute(elm, "totIonCurrent"))
     npeaks = parse(Int, attribute(elm, "peaksCount"))
     peak = find_element(elm, "peaks")
-    data = decode(Base64, content(peak))
+    data = base64decode(content(peak))
     TI, T, nochildren = precisiondict[attribute(peak, "precision")]
     A = reinterpret(TI, data)
     bo = attribute(peak, "byteOrder")
