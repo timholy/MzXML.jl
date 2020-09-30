@@ -1,7 +1,21 @@
 module mzXML
 
 using LightXML, Unitful, Codecs
+import AxisArrays
 
+"""
+    MSscan(polarity::Char, msLevel::Int, retentionTime::typeof(1.0u"s"),
+           lowMz::Float64, highMz::Float64, basePeakMz::Float64,
+           totIonCurrent::Float64, mz::Vector, I::Vector, children::Vector{MSscan})
+
+ Represent mass spectrometry data at a single time point, scanning over all `m/z`.
+`polarity` is `+` or `-` for positive-mode or negative-mode, respectively.
+`msLevel` is 1 for MS, 2 for MS², and so on.
+Retention time is represented using the Unitful package.
+
+`mz` and `I` should be vectors of the same length, with an ion count of `I[i]` at `mz[i]`.
+`children` refers to MS² or higher for particular ions in this scan.
+"""
 struct MSscan{T<:AbstractFloat,TI<:Real}
     polarity::Char
     msLevel::Int
@@ -27,6 +41,11 @@ function Base.show(io::IO, scan::MSscan)
     println(io, mzI)
 end
 
+"""
+    scanpos = mzXML.index(filename)
+
+Return the vector of file positions corresponding to each scan.
+"""
 function index(filename)
     scanpositions = open(filename) do file
         # Find the indexOffset element
@@ -60,6 +79,11 @@ function index(filename)
     scanpositions
 end
 
+"""
+    scans, info = mzXML.load(filename; maxlevel=1)
+
+Load a `*.mzXML` file. `scans` is a vector of scan structures, each at a particular scan time.
+"""
 function load(filename; maxlevel = 1)
     xdoc = parse_file(filename)
     xroot = root(xdoc)
