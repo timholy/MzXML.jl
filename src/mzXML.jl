@@ -3,7 +3,9 @@ module mzXML
 using Base64
 using LightXML, Unitful, ProgressMeter
 import AxisArrays
-using AxisArrays: AxisArray, Axis
+using AxisArrays: AxisArray, Axis, axisnames, axisvalues
+using RecipesBase, UnitfulRecipes
+using UnitfulRecipes: fixaxis!
 
 """
     MSscan(polarity::Char, msLevel::Int, retentionTime::typeof(1.0u"s"),
@@ -244,6 +246,20 @@ function Base.copyto!(dest::AxisArray, src::Vector{<:MSscan})
         end
     end
     return dest
+end
+
+@recipe function f(img::AA) where AA<:AxisArray{T,2} where T
+    y, x = axisvalues(img)
+    yname, xname = axisnames(img)
+    xguide --> string(xname)
+    yguide --> string(yname)
+    if eltype(x) <: Quantity
+        x = fixaxis!(plotattributes, x, :x)
+    end
+    if eltype(y) <: Quantity
+        y = fixaxis!(plotattributes, y, :y)
+    end
+    return x, y, parent(img)
 end
 
 end
