@@ -3,6 +3,7 @@ module mzXML
 using Base64
 using LightXML, Unitful, ProgressMeter
 import AxisArrays
+using AxisArrays: AxisArray, Axis
 
 """
     MSscan(polarity::Char, msLevel::Int, retentionTime::typeof(1.0u"s"),
@@ -192,6 +193,57 @@ function ntoh!(A)
     for i = 1:length(A)
         A[i] = ntoh(A[i])
     end
+end
+
+Base.pairs(scan::MSscan) = zip(scan.mz, scan.I)
+
+function val2index(ax::Axis, val)
+    f, s = first(ax.val), step(ax.val)
+    r = (val - f) / s
+    idx = floor(Int, r)
+    return idx + 1, r - idx
+end
+
+"""
+    copyto!(dest::AxisArray, src::Vector{<:MSscan})
+
+Convert the "sparse-matrix" representation `src` of mass spectrometry
+data into a dense 2d matrix `dest`. `dest` must have one axis named
+`:mz` and the other `:time`; the `:time` axis must have physical units of
+time.
+
+Any previous contents of `dest` are erased. The values of `src` are
+accumulated into `dest` using bilinear interpolation.
+"""
+function Base.copyto!(dest::AxisArray, src::Vector{<:MSscan})
+    axmz, axt = AxisArrays.axes(dest, Axis{:mz}), AxisArrays.axes(dest, Axis{:time})
+    fill!(dest, 0)
+    for scan in src
+        j, ft = val2index(axt, scan.retentionTime)
+        firstindex(axt.val) - 1 <= j <= lastindex(axt.val) || continue
+        for (mz, I) in pairs(scan)
+            i, fmz = val2index(axmz, mz)
+            # Accumulate into `dest`, using bilinear interpolation to
+            # avoid aliasing
+            if firstindex(axt.val) <= j <= lastindex(axt.val)
+                if firstindex(axmz.val) <= i <= lastindex(axmz.val)
+                    dest[axmz(i),axt(j)] += (1-fmz)*(1-ft)*I
+                end
+                if firstindex(axmz.val) <= i+1 <= lastindex(axmz.val)
+                    dest[axmz(i+1),axt(j)] += fmz*(1-ft)*I
+                end
+            end
+            if firstindex(axt.val) <= j+1 <= lastindex(axt.val)
+                if firstindex(axmz.val) <= i <= lastindex(axmz.val)
+                    dest[axmz(i),axt(j+1)] += (1-fmz)*ft*I
+                end
+                if firstindex(axmz.val) <= i+1 <= lastindex(axmz.val)
+                    dest[axmz(i+1),axt(j+1)] += fmz*ft*I
+                end
+            end
+        end
+    end
+    return dest
 end
 
 end

@@ -3,12 +3,14 @@ uuid = "cb69de98-8f9f-5947-b504-cdcc19a34020"
 version = "0.1.0"
 
 [deps]
+AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
+AxisArrays = "0.4"
 LightXML = "0.8, 0.9"
 ProgressMeter = "1"
 Unitful = "1"
