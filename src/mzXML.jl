@@ -4,6 +4,7 @@ using Base64
 using LightXML, Unitful, ProgressMeter
 import AxisArrays
 using AxisArrays: AxisArray, Axis, axisnames, axisvalues
+using AxisArrays.IntervalSets
 using RecipesBase, UnitfulRecipes
 using UnitfulRecipes: fixaxis!
 
@@ -84,11 +85,19 @@ function index(filename)
 end
 
 """
-    scans, info = mzXML.load(filename; maxlevel=1)
+    scans, info = mzXML.load(filename; productlevels=0, timeinterval=0.0u"s" .. Inf*u"s")
 
 Load a `*.mzXML` file. `scans` is a vector of scan structures, each at a particular scan time.
+
+`productlevels` controls the number of product-ion levels that will be loaded in combined MS/MS² or similar runs.
+The "base" MS level (the first encountered in the file) will always be loaded--`productlevels` controls the
+number of additional levels.
+By default no product-ion data will be loaded (`productlevels=0`), but you can request it by increasing `productlevels` to 1 or higher.
+
+`scans` will include only those scans occuring within `timeinterval`, with the default to include all times.
+The `..` is from the `IntervalSets` package.
 """
-function load(filename; maxlevel = 1)
+function load(filename; productlevels=0, kwargs...)
     xdoc = parse_file(filename)
     xroot = root(xdoc)
     if name(xroot) != "mzXML"
@@ -104,11 +113,12 @@ function load(filename; maxlevel = 1)
     el = find_element(msRun, "msInstrument")
     el = find_element(el, "msModel")
     props[:msModel] = attribute(el, "value")
+    props[:productlevels] = productlevels
 
-    load_scans(msRun, maxlevel-1), props
+    load_scans(msRun, productlevels; kwargs...), props
 end
 
-function load_scans(elm, ndeeper=0)
+function load_scans(elm, productlevels=0; kwargs...)
     # First we discover the data type
     local T
     local TI
@@ -123,18 +133,21 @@ function load_scans(elm, ndeeper=0)
     end
     # Now load the data
     scans = MSscan{T,TI}[]
-    load_scans!(scans, elm, ndeeper)
+    load_scans!(scans, elm, productlevels; kwargs...)
 end
 
-@noinline function load_scans!(scans, elm, ndeeper)
+@noinline function load_scans!(scans, elm, productlevels; kwargs...)
     prog = ProgressUnknown("Number of scans read:")
     for c in child_elements(elm)
         n = name(c)
         if n != "scan"
             continue
         end
-        push!(scans, load_scan(c, ndeeper)::eltype(scans))
-        next!(prog)
+        scan = load_scan(c, productlevels; kwargs...)::Union{Nothing,eltype(scans)}
+        if scan !== nothing
+            push!(scans, scan)
+            next!(prog)
+        end
     end
     finish!(prog)
     scans
@@ -143,17 +156,18 @@ end
 polaritydict = Dict("+" => '+', "-" => '-')
 precisiondict = Dict("32" => (Float32, Float32, empty32), "64" => (Float64, Float64, empty64))
 
-function load_scan(elm, ndeeper)
+function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s")
     polarity = polaritydict[attribute(elm, "polarity")]
     retentionTime = parse_time(attribute(elm, "retentionTime"))
+    retentionTime ∈ timeinterval || return nothing
     lMza, hMza = attribute(elm, "lowMz"), attribute(elm, "highMz")
-    if lMza != nothing
+    if lMza !== nothing
         lowMz, highMz = parse(Float64, lMza), parse(Float64, hMza)
     else
         lowMz = highMz = NaN
     end
     msLevela = attribute(elm, "msLevel")
-    msLevel = msLevela == nothing ? 1 : parse(Int, msLevela)
+    msLevel = msLevela === nothing ? 1 : parse(Int, msLevela)
     basePeakMz = parse(Float64, attribute(elm, "basePeakMz"))
     totIonCurrent = parse(Float64, attribute(elm, "totIonCurrent"))
     npeaks = parse(Int, attribute(elm, "peaksCount"))
@@ -168,13 +182,13 @@ function load_scan(elm, ndeeper)
         error("Don't know what to do with byteOrder $bo")
     end
     po = attribute(peak, "pairOrder")
-    if po == nothing
+    if po === nothing
         po = attribute(peak, "contentType")
     end
     po == "m/z-int" || error("Don't know what to do with pairOrder/contentType $po")
     I = A[2:2:end]
     mz = reinterpret(T, A[1:2:end])
-    children = ndeeper > 0 ? load_scans!(MSscan{T,TI}[], elm, ndeeper-1) : nochildren
+    children = productlevels > 0 ? load_scans!(MSscan{T,TI}[], elm, productlevels-1) : nochildren
     MSscan{T,TI}(polarity, msLevel, retentionTime, lowMz, highMz, basePeakMz, totIonCurrent, mz, I, children)
 end
 

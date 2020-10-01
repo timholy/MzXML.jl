@@ -1,4 +1,5 @@
 using mzXML, Unitful
+using mzXML.IntervalSets
 using Test
 
 @testset "mzXML" begin
@@ -13,6 +14,9 @@ using Test
     @test scan.totIonCurrent == 1.637827475594e06
     @test scan.retentionTime == 0.004*u"s"
     @test scans[2].retentionTime == 0.809*u"s"
+
+    scans, info = mzXML.load("test32.mzXML"; timeinterval=0.2u"s" .. Inf*u"s")
+    @test length(scans) == 1 && scans[1].retentionTime == 0.809*u"s"
 
     io = IOBuffer()
     show(io, scan)
