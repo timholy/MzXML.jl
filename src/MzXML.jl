@@ -1,4 +1,4 @@
-module mzXML
+module MzXML
 
 using Base64
 using LightXML, Unitful, ProgressMeter
@@ -47,7 +47,7 @@ function Base.show(io::IO, scan::MSscan)
 end
 
 """
-    scanpos = mzXML.index(filename)
+    scanpos = MzXML.index(filename)
 
 Return the vector of file positions corresponding to each scan.
 """
@@ -85,7 +85,7 @@ function index(filename)
 end
 
 """
-    scans, info = mzXML.load(filename; productlevels=0, timeinterval=0.0u"s" .. Inf*u"s")
+    scans, info = MzXML.load(filename; productlevels=0, timeinterval=0.0u"s" .. Inf*u"s")
 
 Load a `*.mzXML` file. `scans` is a vector of scan structures, each at a particular scan time.
 
