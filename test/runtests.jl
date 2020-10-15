@@ -22,6 +22,9 @@ using Test
     show(io, scan)
     @test occursin("└─basePeak 321.4", String(take!(io)))
 
+    scans, info = MzXML.load("test32.mzXML"; timeinterval=10.2u"s" .. Inf*u"s", timeshift=10u"s")
+    @test length(scans) == 1 && scans[1].retentionTime == 10.809*u"s"
+
     idx = MzXML.index("test32.mzXML")
     @test idx == [1231, 4242]
 

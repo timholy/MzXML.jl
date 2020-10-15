@@ -85,7 +85,7 @@ function index(filename)
 end
 
 """
-    scans, info = MzXML.load(filename; productlevels=0, timeinterval=0.0u"s" .. Inf*u"s")
+    scans, info = MzXML.load(filename; productlevels=0, timeinterval=0.0u"s" .. Inf*u"s", timeshift=0.0u"s")
 
 Load a `*.mzXML` file. `scans` is a vector of scan structures, each at a particular scan time.
 
@@ -156,9 +156,9 @@ end
 polaritydict = Dict("+" => '+', "-" => '-')
 precisiondict = Dict("32" => (Float32, Float32, empty32), "64" => (Float64, Float64, empty64))
 
-function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s")
+function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s", timeshift=0.0u"s")
     polarity = polaritydict[attribute(elm, "polarity")]
-    retentionTime = parse_time(attribute(elm, "retentionTime"))
+    retentionTime = parse_time(attribute(elm, "retentionTime")) + timeshift
     retentionTime ∈ timeinterval || return nothing
     lMza, hMza = attribute(elm, "lowMz"), attribute(elm, "highMz")
     if lMza !== nothing
