@@ -1,5 +1,6 @@
 using MzXML, Unitful
 using MzXML.IntervalSets
+using MzCore
 using Test
 
 @testset "MzXML" begin
@@ -14,6 +15,15 @@ using Test
     @test scan.totIonCurrent == 1.637827475594e06
     @test scan.retentionTime == 0.004*u"s"
     @test scans[2].retentionTime == 0.809*u"s"
+
+    # MzCore traits
+    @test intensitytype(scans[1]) === Float32
+    @test mztype(scans[1]) === Float32
+    axmz, axt = limits(scans)
+    @test minimum(axmz.val) === 110.9f0
+    @test maximum(axmz.val) === 587.6f0
+    @test minimum(axt.val) === 0.004*u"s"
+    @test maximum(axt.val) === 0.809*u"s"
 
     scans, info = MzXML.load("test32.mzXML"; timeinterval=0.2u"s" .. Inf*u"s")
     @test length(scans) == 1 && scans[1].retentionTime == 0.809*u"s"
@@ -30,4 +40,6 @@ using Test
 
     scans, info = MzXML.load("test64.mzXML")
     @test eltype(scans) == MzXML.MSscan{Float64,Float64}
+    @test intensitytype(scans[1]) === Float64
+    @test mztype(scans[1]) === Float64
 end

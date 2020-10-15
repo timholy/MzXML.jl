@@ -2,11 +2,8 @@ module MzXML
 
 using Base64
 using LightXML, Unitful, ProgressMeter
-import AxisArrays
-using AxisArrays: AxisArray, Axis, axisnames, axisvalues
-using AxisArrays.IntervalSets
-using RecipesBase, UnitfulRecipes
-using UnitfulRecipes: fixaxis!
+using MzCore
+using MzCore.IntervalSets, MzCore.AxisArrays
 
 """
     MSscan(polarity::Char, msLevel::Int, retentionTime::typeof(1.0u"s"),
@@ -33,6 +30,9 @@ struct MSscan{T<:AbstractFloat,TI<:Real}
     I::Vector{TI}
     children::Vector{MSscan{T,TI}}
 end
+
+MzCore.intensitytype(::Type{MSscan{T,TI}}) where {T<:AbstractFloat,TI<:Real} = TI
+MzCore.mztype(::Type{MSscan{T,TI}}) where {T<:AbstractFloat,TI<:Real} = T
 
 const empty32 = MSscan{Float32,Float32}[]
 const empty64 = MSscan{Float64,Float64}[]
@@ -188,6 +188,10 @@ function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s", timeshi
     po == "m/z-int" || error("Don't know what to do with pairOrder/contentType $po")
     I = A[2:2:end]
     mz = reinterpret(T, A[1:2:end])
+    if !issorted(mz)   # it's unclear whether the standard requires these to be sorted, so better to check
+        perm = sortperm(mz)
+        I, mz = I[perm], mz[perm]
+    end
     children = productlevels > 0 ? load_scans!(MSscan{T,TI}[], elm, productlevels-1) : nochildren
     MSscan{T,TI}(polarity, msLevel, retentionTime, lowMz, highMz, basePeakMz, totIonCurrent, mz, I, children)
 end
@@ -262,18 +266,22 @@ function Base.copyto!(dest::AxisArray, src::Vector{<:MSscan})
     return dest
 end
 
-@recipe function f(img::AA) where AA<:AxisArray{T,2} where T
-    y, x = axisvalues(img)
-    yname, xname = axisnames(img)
-    xguide --> string(xname)
-    yguide --> string(yname)
-    if eltype(x) <: Quantity
-        x = fixaxis!(plotattributes, x, :x)
+# An internal type for nested `extrema` calls (yielding the min of all mins, max of all maxs)
+struct ExPair{T}
+    min::T
+    max::T
+end
+Base.min(a::ExPair, b::ExPair) = a.min <= b.min ? a : b
+Base.max(a::ExPair, b::ExPair) = a.max >= b.max ? a : b
+
+function MzCore.limits(scans::Vector{<:MSscan})
+    function extrema_mz(scan)
+        isfinite(scan.lowMz) && isfinite(scan.highMz) && return ExPair(scan.lowMz, scan.highMz)
+        return ExPair(first(scan.mz), last(scan.mz))  # safe because guaranteed to be sorted
     end
-    if eltype(y) <: Quantity
-        y = fixaxis!(plotattributes, y, :y)
-    end
-    return x, y, parent(img)
+    tmin, tmax   = extrema(scan->scan.retentionTime, scans)
+    mzmin, mzmax = extrema(extrema_mz, scans)
+    return Axis{:mz}(mzmin.min .. mzmax.max), Axis{:time}(tmin..tmax)
 end
 
 end
