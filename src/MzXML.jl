@@ -10,7 +10,7 @@ using MzCore.IntervalSets, MzCore.AxisArrays
            lowMz::Float64, highMz::Float64, basePeakMz::Float64,
            totIonCurrent::Float64, mz::Vector, I::Vector, children::Vector{MSscan})
 
- Represent mass spectrometry data at a single time point, scanning over all `m/z`.
+Represent mass spectrometry data at a single time point, scanning over all `m/z`.
 `polarity` is `+` or `-` for positive-mode or negative-mode, respectively.
 `msLevel` is 1 for MS, 2 for MS², and so on.
 Retention time is represented using the Unitful package.
@@ -115,7 +115,9 @@ function load(filename; productlevels=0, kwargs...)
     props[:msModel] = attribute(el, "value")
     props[:productlevels] = productlevels
 
-    load_scans(msRun, productlevels; kwargs...), props
+    scans = load_scans(msRun, productlevels; kwargs...)
+    LightXML.free(xdoc)
+    return scans, props
 end
 
 function load_scans(elm, productlevels=0; kwargs...)
