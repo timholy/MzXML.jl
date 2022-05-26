@@ -4,6 +4,7 @@ using Base64
 using LightXML, Unitful, ProgressMeter
 using MzCore
 using MzCore.IntervalSets, MzCore.AxisArrays
+using CodecZlib
 
 """
     MSscan(polarity::Char, msLevel::Int, retentionTime::typeof(1.0u"s"),
@@ -163,7 +164,7 @@ function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s", timeshi
     retentionTime = parse_time(attribute(elm, "retentionTime")) + timeshift
     retentionTime ∈ timeinterval || return nothing
     lMza, hMza = attribute(elm, "lowMz"), attribute(elm, "highMz")
-    if lMza !== nothing
+    if lMza !== nothing && hMza !== nothing
         lowMz, highMz = parse(Float64, lMza), parse(Float64, hMza)
     else
         lowMz = highMz = NaN
@@ -175,6 +176,12 @@ function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s", timeshi
     npeaks = parse(Int, attribute(elm, "peaksCount"))
     peak = find_element(elm, "peaks")
     data = base64decode(content(peak))
+    compression_type = attribute(peak, "compressionType")
+    if compression_type == "zlib"
+        data = transcode(ZlibDecompressor, data)
+    elseif compression_type != "none"
+        error("compressionType $compression_type not supported")
+    end
     TI, T, nochildren = precisiondict[attribute(peak, "precision")]
     A = reinterpret(TI, data)
     bo = attribute(peak, "byteOrder")
