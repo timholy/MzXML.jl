@@ -248,7 +248,7 @@ function Base.copyto!(dest::AxisArray, src::Vector{<:MSscan})
     axmz, axt = AxisArrays.axes(dest, Axis{:mz}), AxisArrays.axes(dest, Axis{:time})
     fill!(dest, 0)
     for scan in src
-        j, ft = val2index(axt, scan.retentionTime.val)
+        j, ft = val2index(axt, scan.retentionTime)
         firstindex(axt.val) - 1 <= j <= lastindex(axt.val) || continue
         for (mz, I) in pairs(scan)
             i, fmz = val2index(axmz, mz)
