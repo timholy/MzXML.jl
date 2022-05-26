@@ -1,6 +1,6 @@
 name = "MzXML"
 uuid = "cb69de98-8f9f-5947-b504-cdcc19a34020"
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
