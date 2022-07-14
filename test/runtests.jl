@@ -3,6 +3,8 @@ using MzXML.IntervalSets
 using MzCore
 using Test
 
+# The test96.mzXML file comes from https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?accession=MSV000089747
+
 @testset "MzXML" begin
     scans, info = MzXML.load("test32.mzXML")
     @test info[:msModel] == "API 3000"
@@ -42,4 +44,9 @@ using Test
     @test eltype(scans) == MzXML.MSscan{Float64,Float64}
     @test intensitytype(scans[1]) === Float64
     @test mztype(scans[1]) === Float64
+
+    scans, info = MzXML.load("test96.mzXML")
+    @test eltype(scans) == MzXML.MSscan{Float32,Float32}
+    @test intensitytype(scans[1]) === Float32
+    @test mztype(scans[1]) === Float32
 end
