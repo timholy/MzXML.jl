@@ -172,14 +172,15 @@ function load_scan(elm, productlevels; timeinterval=0.0u"s" .. Inf*u"s", timeshi
     msLevela = attribute(elm, "msLevel")
     msLevel = msLevela === nothing ? 1 : parse(Int, msLevela)
     basePeakMz = parse(Float64, attribute(elm, "basePeakMz"))
-    totIonCurrent = parse(Float64, attribute(elm, "totIonCurrent"))
+    tic = attribute(elm, "totIonCurrent")
+    totIonCurrent = tic === nothing ? NaN : parse(Float64, tic)
     npeaks = parse(Int, attribute(elm, "peaksCount"))
     peak = find_element(elm, "peaks")
     data = base64decode(content(peak))
     compression_type = attribute(peak, "compressionType")
     if compression_type == "zlib"
         data = transcode(ZlibDecompressor, data)
-    elseif compression_type != "none"
+    elseif compression_type ∉ ("none", nothing) 
         error("compressionType $compression_type not supported")
     end
     TI, T, nochildren = precisiondict[attribute(peak, "precision")]
